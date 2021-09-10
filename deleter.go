@@ -11,6 +11,7 @@ import (
 
 func main() {
 	pathDir := flag.String("path", ".", "Folder path")
+	days := flag.Int("days", 30, "Days saved files")
 
 	flag.Parse()
 
@@ -26,7 +27,7 @@ func main() {
 			}
 
 			if stats.Mode().IsRegular() {
-				if fileIsOld(stats.ModTime()) && isFirstDay(stats.ModTime()) {
+				if fileIsOld(stats.ModTime(), *days) && isFirstDay(stats.ModTime()) {
 					e := os.Remove(path)
 					if e != nil {
 						log.Fatal(e)
@@ -42,9 +43,10 @@ func main() {
 	}
 }
 
-func fileIsOld(t time.Time) bool {
-	return time.Since(t) > 24*time.Hour*30
+func fileIsOld(t time.Time, days int) bool {
+	return time.Since(t) > 24*time.Hour*time.Duration(days)
 }
+
 func isFirstDay(t time.Time) bool {
 	if time.Since(t) > 24*time.Hour*365 {
 		return true
