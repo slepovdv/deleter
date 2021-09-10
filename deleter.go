@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,8 +10,9 @@ import (
 )
 
 func main() {
-	pathDir := flag.String("path", ".", "Folder path")
-	days := flag.Int("days", 30, "Days saved files")
+	pathDir := flag.String("path", ".", "Path to the directory")
+	days := flag.Int("days", 30, "Delete files older than n days")
+	save := flag.String("save-month", "yes", "Save files created on the 1st of each month for 1 year")
 
 	flag.Parse()
 
@@ -27,12 +28,15 @@ func main() {
 			}
 
 			if stats.Mode().IsRegular() {
-				if fileIsOld(stats.ModTime(), *days) && isFirstDay(stats.ModTime()) {
-					e := os.Remove(path)
-					if e != nil {
-						log.Fatal(e)
+				switch {
+				case *save == "yes":
+					if fileIsOld(stats.ModTime(), *days) && isFirstDay(stats.ModTime()) {
+						deleter(path, stats)
 					}
-					fmt.Printf("File %s is remove\nDate is %s\n\n", path, stats.ModTime())
+				default:
+					if fileIsOld(stats.ModTime(), *days) {
+						deleter(path, stats)
+					}
 				}
 			}
 
@@ -53,4 +57,12 @@ func isFirstDay(t time.Time) bool {
 	}
 	return t.Day() != 1
 
+}
+
+func deleter(p string, s fs.FileInfo) {
+	e := os.Remove(p)
+	if e != nil {
+		log.Fatal(e)
+	}
+	log.Printf("File %s is remove\nDate is %s\n\n", p, s.ModTime())
 }
